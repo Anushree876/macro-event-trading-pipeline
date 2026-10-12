@@ -35,7 +35,7 @@ def fetch_calendar():
         return json.loads(RAW_PATH.read_text(encoding="utf-8"))
     client = ApifyClient(os.getenv("APIFY_TOKEN"))
     run = client.actor(ACTOR_ID).call(run_input=ACTOR_INPUT)
-    items = list(client.dataset(run["defaultDatasetId"]).iterate_items())
+    items = list(client.dataset(run.default_dataset_id).iterate_items())
     RAW_PATH.write_text(json.dumps(items, indent=2), encoding="utf-8")
     print(f"Fetched {len(items)} raw rows")
     return items
@@ -58,7 +58,7 @@ def clean_calendar(raw):
     for col in ["actual", "forecast", "previous"]:
         df[col + "_num"] = df[col].map(parse_num)
     df = df.dropna(subset=["actual_num", "forecast_num"])
-    df["surprise"] = df["actual_num"] - df["forecast_num"]
+    df["surprise"] = (df["actual_num"] - df["forecast_num"]).round(4)
     df = df.drop_duplicates(subset=["id"]).sort_values("ts_utc")
     df = df.rename(columns={"title": "name"})
     df["ts_utc"] = df["ts_utc"].dt.strftime("%Y-%m-%d %H:%M:%S")
